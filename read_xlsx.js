@@ -10,7 +10,13 @@ async function getInfo() {
     const workbook = XLSX.readFile('links_bds.xlsx');
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const range = XLSX.utils.decode_range(sheet['!ref']);
-    const browser = await puppeteer.launch({headless: true})
+    let browser;
+    try{
+        browser = await puppeteer.launch({executablePath:"/usr/lib/chromium-browser/chromium-browser", args:['--no-sandbox']});
+    } catch (e){
+        browser = await puppeteer.launch();
+    }
+
     const page = await browser.newPage()
 
     let number = 0;
