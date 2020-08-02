@@ -2,59 +2,72 @@ const XLSX = require('xlsx');
 const puppeteer = require('puppeteer')
 const fs = require('fs')
 
+const ROOT_DIR = "/content/drive/Shared drives/UNLIMITED/dataset/address"
 
-const workbook = XLSX.readFile('links_bds.xlsx');
-const sheet_name_list = workbook.SheetNames;
-const xlData = XLSX.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]]);
-fs.mkdirSync("data", { recursive: true })
-async function getInfo(url) {
 
+async function getInfo() {
+    // fs.mkdirSync("data", {recursive: true})
+    const workbook = XLSX.readFile('links_bds.xlsx');
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const range = XLSX.utils.decode_range(sheet['!ref']);
     const browser = await puppeteer.launch({headless: true})
     const page = await browser.newPage()
-    // page.setViewport()
+
     let number = 0;
-    const bdsInfo = {};
-    for (const key in xlData) {
-        if (xlData.hasOwnProperty(key)) {
-            console.log(xlData[key]["link"])
+    let rowNum = 0
+    try{
+        const content = fs.readFileSync(`${ROOT_DIR}/log.json`, 'utf8');
+        const logInfo = JSON.parse(content)
+        number = logInfo['addressID']
+        rowNum = logInfo['rowNum']
+        console.log(rowNum + " " + number)
+    }catch (e) {}
+    let bdsInfo = {}
+    try{
+        const content = fs.readFileSync(`${ROOT_DIR}/address.json`, 'utf8');
+        bdsInfo = JSON.parse(content)
+    }catch (e) {}
 
-            try {
-                await page.goto(xlData[key]["link"])
-                const address = await page.evaluate((bdsInfo) => {
-                    let addressTag = null
+    for (rowNum; rowNum <= range.e.r; rowNum++) {
+        // Example: Get second cell in each row, i.e. Column "B"
+        const secondCell = sheet[XLSX.utils.encode_cell({r: rowNum, c: 0})];
+        console.log(secondCell['v'])
 
-                    try {
-                        addressTag = document.querySelector(
-                            '#product-other-detail > div:nth-child(2) > div.right').innerText
-                    } catch (e) {
-                        console.log(e)
-                    }
+        try {
+            await page.goto(secondCell['v'])
+            const address = await page.evaluate(() => {
+                let addressTag = null
 
-                    return addressTag
-                }, bdsInfo);
-
-                if (address) {
-                    if (Object.values(bdsInfo).indexOf(address) > -1) {
-                        console.log('has ' + address);
-                    } else {
-                        bdsInfo[`address_${number}`] = address
-                        number = number + 1;
-                    }
+                try {
+                    addressTag = document.querySelector(
+                        '#product-other-detail > div:nth-child(2) > div.right').innerText
+                } catch (e) {
+                    console.log(e)
                 }
-                fs.writeFileSync('data/address.json', `${JSON.stringify(bdsInfo)}\r\n`, {flag: 'w'});
-                console.log(bdsInfo)
-            } catch (e) {
-                console.log(e)
-            }
-        }
 
+                return addressTag
+            });
+
+            if (address) {
+                if (Object.values(bdsInfo).indexOf(address) > -1) {
+                    console.log('existed ' + address);
+                } else {
+                    console.log('added ' + address);
+                    bdsInfo[`address_${number}`] = address
+                    number = number + 1;
+                }
+            }
+            fs.writeFileSync(`${ROOT_DIR}/address.json`, `${JSON.stringify(bdsInfo)}\r\n`, {flag: 'w'});
+            fs.writeFileSync(`${ROOT_DIR}/log.json`, `{"addressID": ${number}, "rowNum": ${rowNum}}`, {flag: 'w'});
+            // console.log(bdsInfo)
+        } catch (e) {
+            console.log(e)
+        }
     }
+
 }
 
 (async () => {
-
-    console.log('mana')
-    await getInfo(
-        'https://batdongsan.com.vn/ban-can-ho-chung-cu-duong-nguyen-huu-tho-phuong-tan-hung-14-prj-sunrise-city/covid-19-lan-2-gia-view-xuong-cham-day-thich-p-de-dau-tu-va-o-0777777284-pr26224152')
+    await getInfo()
     // await getInfo('https://batdongsan.com.vn/ban-nha-rieng-duong-phan-van-hon-xa-ba-diem/sieu-pho-1-0-2-noi-that-dang-cap-ngay-cho-hoc-mon-pr26224565');
 })()
