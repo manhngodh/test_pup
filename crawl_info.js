@@ -27,7 +27,11 @@ function randomArea () {
 
 async function getInfo (url) {
   const site_name = 'test'
-  const browser = await puppeteer.launch({headless: true})
+  try{
+      browser = await puppeteer.launch({executablePath:"/usr/lib/chromium-browser/chromium-browser", args:['--no-sandbox']});
+  } catch (e){
+      browser = await puppeteer.launch();
+  }
   const page = await browser.newPage()
   // page.setViewport()
   await page.goto(url)
