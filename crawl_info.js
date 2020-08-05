@@ -4,19 +4,6 @@ const fs = require('fs')
 const obj = JSON.parse(
   fs.readFileSync('labels.json', 'utf8'))
 
-async function doScreenCapture (url, site_name) {
-  const browser = await puppeteer.launch()
-  const page = await browser.newPage()
-  page.setViewport({width: 720, height: 1080})
-  await page.goto(url, {waitUntil: 'domcontentloaded'})
-
-  await page.screenshot({
-    fullPage: true,
-    path: `${site_name}.png`, 
-  })
-  await browser.close()
-}
-
 function randomNumberPhone () {
   return '0300200304'
 }
@@ -27,13 +14,17 @@ function randomArea () {
 
 async function getInfo (url) {
   const site_name = 'test'
-  try{
+  let browser;
+  try {
       browser = await puppeteer.launch({executablePath:"/usr/lib/chromium-browser/chromium-browser", args:['--no-sandbox']});
   } catch (e){
-      browser = await puppeteer.launch();
+      browser = await puppeteer.launch()
   }
   const page = await browser.newPage()
-  // page.setViewport()
+  await page.setViewport({
+    width: 1024,
+    height: 1080,
+  });
   await page.goto(url)
   await page.click(
     '#LeftMainContent__productDetail_contactMobile > div.right.contact-phone')
@@ -87,7 +78,6 @@ async function getInfo (url) {
 }
 
 (async () => {
-
   console.log('mana')
   await getInfo(
     'https://batdongsan.com.vn/ban-can-ho-chung-cu-duong-nguyen-huu-tho-phuong-tan-hung-14-prj-sunrise-city/covid-19-lan-2-gia-view-xuong-cham-day-thich-p-de-dau-tu-va-o-0777777284-pr26224152')
