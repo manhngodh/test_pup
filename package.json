@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "jsdom": "^16.3.0",
+    "jsdom": "^16.5.0",
     "puppeteer": "^5.0.0",
     "xlsx": "^0.16.5"
   }
